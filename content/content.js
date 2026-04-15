@@ -122,7 +122,7 @@ function showPanel(x, y, selectedText, contextSentence, existingData = null) {
     
     // Set up existing values if we are in Edit Mode
     let currentDef = existingData ? existingData.definition : "";
-    let currentLang = existingData ? existingData.language : "en";
+    let currentLang = existingData ? existingData.language : "fr";
     
     // Build the editable sentences list with trash cans
     let existingSentencesHtml = "";
