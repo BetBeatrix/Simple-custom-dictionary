@@ -151,9 +151,9 @@ function showPanel(x, y, selectedText, contextSentence, existingData = null) {
         
         <label for="dict-lang">Language:</label>
         <select id="dict-lang">
+            <option value="fr" ${currentLang === 'fr' ? 'selected' : ''}>French</option>
             <option value="en" ${currentLang === 'en' ? 'selected' : ''}>English</option>
             <option value="es" ${currentLang === 'es' ? 'selected' : ''}>Spanish</option>
-            <option value="fr" ${currentLang === 'fr' ? 'selected' : ''}>French</option>
             <option value="pl" ${currentLang === 'pl' ? 'selected' : ''}>Polish</option>
         </select>
 
