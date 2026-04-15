@@ -5,6 +5,11 @@
   "permissions": [
     "storage"
   ],
+  "background": {
+    "scripts": ["background/background.js"],
+    "service_worker": "background/background.js",
+    "type": "module"
+  },
   "action": {
     "default_popup": "popup/popup.html"
   },
@@ -15,10 +20,9 @@
       "css": ["content/content.css"]
     }
   ],
-
   "web_accessible_resources": [
     {
-      "resources": ["icons/icon.png"],
+      "resources": ["icons/save.png"],
       "matches": ["<all_urls>"]
     }
   ]
