@@ -416,11 +416,6 @@ function removeReadOnlyPanel() {
     }
 }
 
-
-async function fetchLanguages() {
-    //try {};
-}
-
 function getSelectionDetails() {
     let selection = window.getSelection();
     let rawSelection = selection.toString();
