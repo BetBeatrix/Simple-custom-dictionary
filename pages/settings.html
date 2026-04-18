@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Settings</title>
+    <link rel="stylesheet" href="wordlist.css">
+    <style>
+        .lang-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 12px 15px; background: #1e1e1e; margin-bottom: 8px; 
+            border-radius: 6px; border: 1px solid #333;
+        }
+        .toggle-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>⚙️ Settings</h1>
+                <a href="wordlist.html" class="settings-link" title="Back to Word List">📖</a>
+            </div>
+        </header>
+
+        <main>
+            <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <label for="default-lang-select" style="font-weight: bold; margin: 0; width: 180px;">Default Language:</label>
+                    <select id="default-lang-select" style="width: auto;"></select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label for="default-search-select" style="font-weight: bold; margin: 0; width: 180px;">Default Search Provider:</label>
+                    <select id="default-search-select" style="width: auto;"></select>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 0;">Manage Languages</h2>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="new-lang-code" placeholder="Code (e.g. de)" style="width: 100px;">
+                <input type="text" id="new-lang-name" placeholder="Language Name (e.g. German)" style="flex: 1;">
+                <button id="btn-add-lang" style="background-color: #198754; font-weight: bold;">+ Add</button>
+            </div>
+
+            <div id="languages-list">
+                </div>
+
+            <h2 style="margin-top: 30px;">Search Providers</h2>
+            <p style="font-size: 12px; color: #aaa; margin-top: -10px;">Add custom dictionaries. Use <strong>{word}</strong> to specify where the text should be inserted.</p>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="new-search-name" placeholder="Name (e.g. DeepL)" style="width: 120px;">
+                <input type="text" id="new-search-url" placeholder="URL (e.g. https://www.deepl.com/translator#en/fr/{word})" style="flex: 1;">
+                <button id="btn-add-search" style="background-color: #198754; font-weight: bold;">+ Add</button>
+            </div>
+
+            <div id="search-providers-list">
+                </div>
+        </main>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>

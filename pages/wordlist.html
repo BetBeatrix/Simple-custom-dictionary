@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>My Dictionary</title>
+    <link rel="stylesheet" href="wordlist.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+           <div class="header-title">
+                <h1>📖 My Saved Words</h1>
+                <a href="settings.html" class="settings-link" title="Settings">⚙️</a>
+            </div>
+            <div class="controls">
+                <select id="filter-lang">
+                    <option value="all">All Languages</option>
+                </select>
+                
+                <select id="sort-order">
+                    <option value="newest">Sort: Newest First</option>
+                    <option value="a-z">Sort: A to Z</option>
+                    <option value="z-a">Sort: Z to A</option>
+                </select>
+            </div>
+        </header>
+
+        <main id="word-list-container">
+            </main>
+
+        <div class="pagination">
+            <button id="btn-prev" disabled>&laquo; Previous</button>
+            <span id="page-info">Page 1 of 1</span>
+            <button id="btn-next" disabled>Next &raquo;</button>
+        </div>
+    </div>
+
+    <script src="wordlist.js"></script>
+</body>
+</html>

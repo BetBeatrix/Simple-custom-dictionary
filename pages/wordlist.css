@@ -1,0 +1,152 @@
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto; /* Centers the app on the screen */
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #333;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #ffffff;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.settings-link {
+    text-decoration: none;
+    font-size: 22px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.settings-link:hover {
+    opacity: 1;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+}
+
+select, button {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+/* --- Word Cards (The Expandable Details) --- */
+.word-card {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.word-card summary {
+    padding: 15px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none; /* Hides the default browser arrow */
+    background-color: #252525;
+}
+
+/* Add our own custom arrow that rotates */
+.word-card summary::after {
+    content: "▼";
+    font-size: 12px;
+    color: #888;
+    transition: transform 0.2s;
+}
+.word-card[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.word-card summary:hover {
+    background-color: #2a2a2a;
+}
+
+.lang-badge {
+    font-size: 11px;
+    background-color: #0d6efd;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
+.card-content {
+    padding: 15px;
+    border-top: 1px solid #333;
+}
+
+.card-content p {
+    margin-top: 0;
+}
+
+.example-item {
+    background-color: #2a2a2a;
+    border-left: 3px solid #0d6efd;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    border-radius: 0 4px 4px 0;
+}
+
+.example-item a {
+    text-decoration: none;
+    margin-right: 8px;
+}
+
+/* --- Pagination --- */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button:not(:disabled):hover {
+    background-color: #3d3d3d;
+}

@@ -29,7 +29,10 @@ async function saveWordToDatabase(data) {
     
     try {
         let result = await browser.storage.local.get(word);
-        let wordData = result[word] || { examples: [] };
+        let wordData = result[word] || { 
+            examples: [], 
+            timestamp: Date.now() // <-- Added timestamp
+        };
 
         // Force update the definition and language to whatever the edit panel sends
         wordData.definition = definition;

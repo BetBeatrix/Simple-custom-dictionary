@@ -105,7 +105,7 @@ function removeIcon() {
 let floatingPanel = null;
 
 // Notice the new 'existingData' parameter
-function showPanel(x, y, selectedText, contextSentence, existingData = null) {
+async function showPanel(x, y, selectedText, contextSentence, existingData = null) {
     removeIcon(); 
     removePanel();
     removeReadOnlyPanel(); // Ensure the read-only one closes!
@@ -120,10 +120,37 @@ function showPanel(x, y, selectedText, contextSentence, existingData = null) {
     floatingPanel = document.createElement('div');
     floatingPanel.id = 'my-dictionary-panel';
     
-    // Set up existing values if we are in Edit Mode
-    let currentDef = existingData ? existingData.definition : "";
-    let currentLang = existingData ? existingData.language : "fr";
+    // NEW: Fetch all settings from the database
+    let storageData = await browser.storage.local.get("settings");
+    let settings = storageData.settings || {};
+    let langs = settings.languages || [
+        { code: "en", name: "English" }, { code: "es", name: "Spanish" }, { code: "fr", name: "French" }, { code: "pl", name: "Polish" }
+    ];
     
+    // Grab the user's chosen default (falling back to French if nothing is set yet)
+    let defaultLangCode = settings.defaultLanguage || "fr";
+
+    // NEW: Fetch search providers and the chosen default
+    let searchProviders = settings.searchProviders && settings.searchProviders.length > 0 
+        ? settings.searchProviders 
+        : [{ name: "Wiktionary", url: "https://en.wiktionary.org/wiki/{word}" }];
+    
+    let defaultSearchName = settings.defaultSearch || "Wiktionary";
+    let chosenProvider = searchProviders.find(p => p.name === defaultSearchName) || searchProviders[0];
+    
+    // Encode the word into the final URL
+    let defaultSearchUrl = chosenProvider.url.replace('{word}', encodeURIComponent(selectedText));
+
+    // Set up existing values if we are in Edit Mode, otherwise use the dynamic default!
+    let currentDef = existingData ? existingData.definition : "";
+    let currentLang = existingData ? existingData.language : defaultLangCode;
+    
+    // Build the dynamic <option> tags
+    let langOptionsHtml = langs.map(l => 
+        `<option value="${l.code}" ${currentLang === l.code ? 'selected' : ''}>${l.name}</option>`
+    ).join('');
+    langOptionsHtml += `<option value="unassigned" ${currentLang === 'unassigned' ? 'selected' : ''}>Unassigned</option>`;
+
     // Build the editable sentences list with trash cans
     let existingSentencesHtml = "";
     if (existingData && existingData.examples && existingData.examples.length > 0) {
@@ -145,16 +172,13 @@ function showPanel(x, y, selectedText, contextSentence, existingData = null) {
         <label for="dict-word">Word:</label>
         <input type="text" id="dict-word" value="${selectedText}" disabled style="opacity: 0.7; cursor: not-allowed;">
         
-        <label for="dict-def">Definition:</label>
+       <label for="dict-def">Definition:</label>
         <textarea id="dict-def" placeholder="Type definition here...">${currentDef}</textarea>
-        <a href="https://en.wiktionary.org/wiki/${selectedText}" target="_blank">Search online</a>
+        <a href="${defaultSearchUrl}" target="_blank" style="color: #66b3ff; font-size: 12px; text-decoration: none; font-weight: bold;">🔍 Search online</a>
         
         <label for="dict-lang">Language:</label>
         <select id="dict-lang">
-            <option value="fr" ${currentLang === 'fr' ? 'selected' : ''}>French</option>
-            <option value="en" ${currentLang === 'en' ? 'selected' : ''}>English</option>
-            <option value="es" ${currentLang === 'es' ? 'selected' : ''}>Spanish</option>
-            <option value="pl" ${currentLang === 'pl' ? 'selected' : ''}>Polish</option>
+            ${langOptionsHtml}
         </select>
 
         ${existingSentencesHtml}
@@ -296,6 +320,16 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
         let wordData = result[wordToLookup];
         if (!wordData) return;
 
+        // NEW: Fetch settings for the search link
+        let settingsData = await browser.storage.local.get("settings");
+        let searchProviders = settingsData.settings?.searchProviders && settingsData.settings.searchProviders.length > 0 
+            ? settingsData.settings.searchProviders 
+            : [{ name: "Wiktionary", url: "https://en.wiktionary.org/wiki/{word}" }];
+            
+        let defaultSearchName = settingsData.settings?.defaultSearch || "Wiktionary";
+        let chosenProvider = searchProviders.find(p => p.name === defaultSearchName) || searchProviders[0];
+        let defaultSearchUrl = chosenProvider.url.replace('{word}', encodeURIComponent(wordToLookup));
+
         let examplesHtml = "";
         let isSentenceSaved = false;
 
@@ -322,6 +356,10 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
             
             <div style="font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 5px;">
                 Language: ${wordData.language}
+            </div>
+            
+            <div style="margin-top: 5px; margin-bottom: 10px;">
+                <a href="${defaultSearchUrl}" target="_blank" style="color: #66b3ff; font-size: 12px; text-decoration: none;">🔍 Search online</a>
             </div>
             
             <p><strong>Definition:</strong><br>${wordData.definition || "<em>No definition saved.</em>"}</p>
@@ -466,7 +504,17 @@ let cachedHighlightRegex = null;
 async function initializeHighlighter() {
     try {
         let data = await browser.storage.local.get(null);
-        let savedWords = Object.keys(data);
+        let settings = data.settings || { languages: [] };
+        
+        // Find languages that have highlighting turned OFF
+        let disabledLangs = settings.languages.filter(l => !l.highlight).map(l => l.code);
+        
+        // Filter the dictionary: Ignore the settings object, and ignore disabled languages
+        let savedWords = Object.keys(data).filter(key => {
+            if (key === "settings") return false; // THE FIX: Ignore the word 'settings'
+            if (disabledLangs.includes(data[key].language)) return false; 
+            return true;
+        });
         
         if (savedWords.length === 0) return;
 
@@ -486,7 +534,17 @@ async function initializeHighlighter() {
 // --- NEW: Refreshes the regex dictionary in memory ---
 async function refreshHighlighter() {
     let data = await browser.storage.local.get(null);
-    let savedWords = Object.keys(data);
+    let settings = data.settings || { languages: [] };
+    
+    // Find languages that have highlighting turned OFF
+    let disabledLangs = settings.languages.filter(l => !l.highlight).map(l => l.code);
+    
+    // Filter the dictionary: Ignore the settings object, and ignore disabled languages
+    let savedWords = Object.keys(data).filter(key => {
+        if (key === "settings") return false; // Don't try to highlight the word "settings"
+        if (disabledLangs.includes(data[key].language)) return false; 
+        return true;
+    });
     
     if (savedWords.length === 0) {
         cachedHighlightRegex = null;
