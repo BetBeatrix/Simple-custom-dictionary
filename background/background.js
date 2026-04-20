@@ -1,4 +1,4 @@
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "saveWord") {
         saveWordToDatabase(request.data).then(() => sendResponse({ status: "success" }));
         return true; 
@@ -6,18 +6,18 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     // NEW: Delete an entire word
     if (request.action === "deleteWord") {
-        browser.storage.local.remove(request.data.word).then(() => sendResponse({ status: "success" }));
+        chrome.storage.local.remove(request.data.word).then(() => sendResponse({ status: "success" }));
         return true;
     }
     
     // NEW: Delete a specific sentence from a word
     if (request.action === "deleteSentence") {
-        browser.storage.local.get(request.data.word).then(result => {
+        chrome.storage.local.get(request.data.word).then(result => {
             let wordData = result[request.data.word];
             if (wordData) {
                 // Filter out the exact sentence they want to delete
                 wordData.examples = wordData.examples.filter(ex => ex.sentence !== request.data.sentence);
-                browser.storage.local.set({ [request.data.word]: wordData }).then(() => sendResponse({ status: "success" }));
+                chrome.storage.local.set({ [request.data.word]: wordData }).then(() => sendResponse({ status: "success" }));
             }
         });
         return true;
@@ -28,7 +28,7 @@ async function saveWordToDatabase(data) {
     let { word, definition, language, sentence, weblink } = data; 
     
     try {
-        let result = await browser.storage.local.get(word);
+        let result = await chrome.storage.local.get(word);
         let wordData = result[word] || { 
             examples: [], 
             timestamp: Date.now() // <-- Added timestamp
@@ -45,7 +45,7 @@ async function saveWordToDatabase(data) {
             }
         }
 
-        await browser.storage.local.set({ [word]: wordData });
+        await chrome.storage.local.set({ [word]: wordData });
     } catch (error) {
         console.error("Backend storage error:", error);
     }

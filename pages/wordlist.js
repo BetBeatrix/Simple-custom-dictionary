@@ -14,7 +14,7 @@ const pageInfo = document.getElementById('page-info');
 // --- INITIALIZATION ---
 // --- INITIALIZATION ---
 async function loadData() {
-    let data = await browser.storage.local.get(null);
+    let data = await chrome.storage.local.get(null);
     
     // 1. BUILD THE DYNAMIC LANGUAGE DROPDOWN
     let langs = data.settings?.languages || [
@@ -150,7 +150,7 @@ container.addEventListener('click', async (e) => {
     // 1. Delete Entire Word
     if (btn.classList.contains('delete-word-btn')) {
         if (confirm(`Are you sure you want to completely delete "${word}"?`)) {
-            await browser.runtime.sendMessage({ action: "deleteWord", data: { word } });
+            await chrome.runtime.sendMessage({ action: "deleteWord", data: { word } });
             loadData(); // Re-fetch from database and render
         }
     }
@@ -159,7 +159,7 @@ container.addEventListener('click', async (e) => {
     if (btn.classList.contains('delete-sentence-btn')) {
         let sentence = btn.getAttribute('data-sentence');
         if (confirm(`Delete this context sentence?`)) {
-            await browser.runtime.sendMessage({ action: "deleteSentence", data: { word, sentence } });
+            await chrome.runtime.sendMessage({ action: "deleteSentence", data: { word, sentence } });
             loadData();
         }
     }
@@ -182,7 +182,7 @@ container.addEventListener('click', async (e) => {
         let wordObj = allWords.find(w => w.word === word);
         
         btn.textContent = "Saving...";
-        await browser.runtime.sendMessage({ 
+        await chrome.runtime.sendMessage({ 
             action: "saveWord", 
             data: { word: word, definition: newDef, language: wordObj.language } 
         });

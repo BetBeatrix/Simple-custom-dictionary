@@ -73,9 +73,9 @@ function showIcon(x, y, text, contextSentence) {
     floatingIcon = document.createElement('img');
     floatingIcon.id = 'my-dictionary-floating-icon';
     
-    // NOTE: You must use browser.runtime.getURL to get the correct path 
+    // NOTE: You must use chrome.runtime.getURL to get the correct path 
     // for an image stored inside your extension folder!
-    floatingIcon.src = browser.runtime.getURL('/icons/save.png'); 
+    floatingIcon.src = chrome.runtime.getURL('/icons/save.png'); 
 
     // Position it slightly below and to the right of the cursor
     floatingIcon.style.left = (x + 5) + 'px';
@@ -121,7 +121,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
     floatingPanel.id = 'my-dictionary-panel';
     
     // NEW: Fetch all settings from the database
-    let storageData = await browser.storage.local.get("settings");
+    let storageData = await chrome.storage.local.get("settings");
     let settings = storageData.settings || {};
     let langs = settings.languages || [
         { code: "en", name: "English" }, { code: "es", name: "Spanish" }, { code: "fr", name: "French" }, { code: "pl", name: "Polish" }
@@ -243,7 +243,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
             let sentenceToDelete = this.getAttribute('data-sentence');
             this.parentElement.style.opacity = "0.5"; // Visual feedback
             
-            await browser.runtime.sendMessage({
+            await chrome.runtime.sendMessage({
                 action: "deleteSentence",
                 data: { word: selectedText, sentence: sentenceToDelete }
             });
@@ -259,7 +259,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
             if (!isSure) return; 
             
             this.textContent = "Deleting...";
-            await browser.runtime.sendMessage({ action: "deleteWord", data: { word: selectedText } });
+            await chrome.runtime.sendMessage({ action: "deleteWord", data: { word: selectedText } });
             
             // THE FIX: Update memory before changing the page
             await refreshHighlighter();
@@ -286,7 +286,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
         this.style.backgroundColor = "#28a745"; 
         
         try {
-            await browser.runtime.sendMessage({
+            await chrome.runtime.sendMessage({
                 action: "saveWord",
                 data: { word: selectedText, definition: finalDef, language: finalLang, sentence: finalSentence, weblink: currentUrl }
             });
@@ -316,12 +316,12 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
     removeReadOnlyPanel();
 
     try {
-        let result = await browser.storage.local.get(wordToLookup);
+        let result = await chrome.storage.local.get(wordToLookup);
         let wordData = result[wordToLookup];
         if (!wordData) return;
 
         // NEW: Fetch settings for the search link
-        let settingsData = await browser.storage.local.get("settings");
+        let settingsData = await chrome.storage.local.get("settings");
         let searchProviders = settingsData.settings?.searchProviders && settingsData.settings.searchProviders.length > 0 
             ? settingsData.settings.searchProviders 
             : [{ name: "Wiktionary", url: "https://en.wiktionary.org/wiki/{word}" }];
@@ -395,7 +395,7 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
         if (addContextBtn) {
             addContextBtn.addEventListener('click', async function() {
                 this.textContent = "Saving...";
-                await browser.runtime.sendMessage({
+                await chrome.runtime.sendMessage({
                     action: "saveWord",
                     data: { word: wordToLookup, definition: wordData.definition, language: wordData.language, sentence: currentSentence, weblink: currentUrl }
                 });
@@ -498,7 +498,7 @@ let cachedHighlightRegex = null;
 // 2. The initialization function that runs ONCE when the page loads
 async function initializeHighlighter() {
     try {
-        let data = await browser.storage.local.get(null);
+        let data = await chrome.storage.local.get(null);
         let settings = data.settings || { languages: [] };
         
         // Find languages that have highlighting turned OFF
@@ -528,7 +528,7 @@ async function initializeHighlighter() {
 
 // --- NEW: Refreshes the regex dictionary in memory ---
 async function refreshHighlighter() {
-    let data = await browser.storage.local.get(null);
+    let data = await chrome.storage.local.get(null);
     let settings = data.settings || { languages: [] };
     
     // Find languages that have highlighting turned OFF

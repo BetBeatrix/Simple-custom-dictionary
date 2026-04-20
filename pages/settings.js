@@ -20,7 +20,7 @@ const searchContainer = document.getElementById('search-providers-list');
 const defaultSearchSelect = document.getElementById('default-search-select');
 
 async function loadSettings() {
-    let data = await browser.storage.local.get("settings");
+    let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
     
     if (!settings.defaultLanguage) settings.defaultLanguage = "fr";
@@ -35,7 +35,7 @@ async function loadSettings() {
 
 // Master save function
 async function saveSettings(newSettings) {
-    await browser.storage.local.set({ settings: newSettings });
+    await chrome.storage.local.set({ settings: newSettings });
     loadSettings(); // Reload the UI to reflect exact saved state
 }
 
@@ -94,7 +94,7 @@ function renderSearchProviders(providers) {
 // --- EVENT LISTENERS ---
 
 defaultLangSelect.addEventListener('change', async (e) => {
-    let data = await browser.storage.local.get("settings");
+    let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
     settings.defaultLanguage = e.target.value;
     saveSettings(settings);
@@ -106,7 +106,7 @@ document.getElementById('btn-add-lang').addEventListener('click', async () => {
     let name = document.getElementById('new-lang-name').value.trim();
     if (!code || !name) return alert("Please fill out both the code and the name.");
 
-    let data = await browser.storage.local.get("settings");
+    let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
     if (settings.languages.some(l => l.code === code)) return alert("This language code already exists!");
 
@@ -118,7 +118,7 @@ document.getElementById('btn-add-lang').addEventListener('click', async () => {
 
 // CHANGE Default Search Provider
 defaultSearchSelect.addEventListener('change', async (e) => {
-    let data = await browser.storage.local.get("settings");
+    let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
     settings.defaultSearch = e.target.value;
     saveSettings(settings);
@@ -131,7 +131,7 @@ document.getElementById('btn-add-search').addEventListener('click', async () => 
     if (!name || !url) return alert("Please fill out both the name and the URL.");
     if (!url.includes("{word}")) return alert("The URL must contain the {word} placeholder!");
 
-    let data = await browser.storage.local.get("settings");
+    let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
 
     settings.searchProviders.push({ name, url });
@@ -142,7 +142,7 @@ document.getElementById('btn-add-search').addEventListener('click', async () => 
 
 // DELETES and TOGGLES via Event Delegation
 document.body.addEventListener('click', async (e) => {
-    let data = await browser.storage.local.get("settings");
+    let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
 
     if (e.target.classList.contains('highlight-toggle')) {
@@ -163,11 +163,11 @@ document.body.addEventListener('click', async (e) => {
             }
             saveSettings(settings);
 
-            let allData = await browser.storage.local.get(null);
+            let allData = await chrome.storage.local.get(null);
             for (let key in allData) {
                 if (key !== "settings" && allData[key].language === code) {
                     allData[key].language = "unassigned";
-                    await browser.storage.local.set({ [key]: allData[key] });
+                    await chrome.storage.local.set({ [key]: allData[key] });
                 }
             }
         }
