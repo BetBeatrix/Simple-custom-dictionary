@@ -18,6 +18,7 @@ const langContainer = document.getElementById('languages-list');
 const defaultLangSelect = document.getElementById('default-lang-select');
 const searchContainer = document.getElementById('search-providers-list');
 const defaultSearchSelect = document.getElementById('default-search-select');
+const exportLangSelect = document.getElementById('export-lang-select');
 
 async function loadSettings() {
     let data = await chrome.storage.local.get("settings");
@@ -31,6 +32,8 @@ async function loadSettings() {
     renderDefaultSearchSelect(settings.searchProviders, settings.defaultSearch); // <-- New function
     renderLangs(settings.languages);
     renderSearchProviders(settings.searchProviders);
+
+    renderExportSelect(settings.languages);
 }
 
 // Master save function
@@ -49,6 +52,12 @@ function renderDefaultSearchSelect(providers, currentDefault) {
     defaultSearchSelect.innerHTML = providers.map(p => 
         `<option value="${p.name}" ${p.name === currentDefault ? 'selected' : ''}>${p.name}</option>`
     ).join('');
+}
+
+function renderExportSelect(langs) {
+    exportLangSelect.innerHTML = `<option value="all">All Languages</option>` + 
+        langs.map(l => `<option value="${l.code}">${l.name}</option>`).join('') +
+        `<option value="unassigned">Unassigned</option>`;
 }
 
 function renderLangs(langs) {
@@ -184,6 +193,88 @@ document.body.addEventListener('click', async (e) => {
             saveSettings(settings);
         }
     }
+});
+
+// --- EXPORT LOGIC ---
+document.getElementById('btn-export').addEventListener('click', async () => {
+    let lang = exportLangSelect.value;
+    let data = await chrome.storage.local.get(null);
+    let exportObj = {};
+    
+    for (let key in data) {
+        if (key !== "settings") {
+            if (lang === 'all' || data[key].language === lang) {
+                exportObj[key] = data[key];
+            }
+        }
+    }
+    
+    if (Object.keys(exportObj).length === 0) return alert("No words found to export for this language.");
+
+    // Create and download the JSON file
+    let blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: "application/json"});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `my-dictionary-backup-${lang}-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+});
+
+// --- IMPORT LOGIC ---
+document.getElementById('btn-import').addEventListener('click', () => {
+    let fileInput = document.getElementById('import-file');
+    if (!fileInput.files.length) return alert("Please select a JSON file to import.");
+    
+    let file = fileInput.files[0];
+    let reader = new FileReader();
+    
+    reader.onload = async (e) => {
+        try {
+            let importedData = JSON.parse(e.target.result);
+            let currentData = await chrome.storage.local.get(null);
+            
+            let addedCount = 0;
+            let updatedCount = 0;
+
+            for (let word in importedData) {
+                if (word === "settings") continue; // Never overwrite settings via word import
+
+                let incomingWord = importedData[word];
+                
+                if (currentData[word]) {
+                    // Word exists: Keep local definition & language, merge context sentences
+                    let existingExamples = currentData[word].examples || [];
+                    let incomingExamples = incomingWord.examples || [];
+                    let addedNewSentence = false;
+                    
+                    incomingExamples.forEach(incEx => {
+                        if (!existingExamples.some(ex => ex.sentence === incEx.sentence)) {
+                            existingExamples.push(incEx);
+                            addedNewSentence = true;
+                        }
+                    });
+                    
+                    if (addedNewSentence) {
+                        currentData[word].examples = existingExamples;
+                        updatedCount++;
+                    }
+                } else {
+                    // Brand new word: import it completely
+                    currentData[word] = incomingWord;
+                    addedCount++;
+                }
+            }
+
+            await chrome.storage.local.set(currentData);
+            alert(`Import complete!\n\nAdded ${addedCount} new words.\nMerged new sentences into ${updatedCount} existing words.`);
+            fileInput.value = ""; 
+        } catch (err) {
+            alert("Error importing file! Make sure it is a valid JSON dictionary backup.");
+        }
+    };
+    
+    reader.readAsText(file);
 });
 
 loadSettings();
