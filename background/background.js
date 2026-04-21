@@ -4,18 +4,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true; 
     }
     
-    // NEW: Delete an entire word
     if (request.action === "deleteWord") {
         chrome.storage.local.remove(request.data.word).then(() => sendResponse({ status: "success" }));
         return true;
     }
     
-    // NEW: Delete a specific sentence from a word
     if (request.action === "deleteSentence") {
         chrome.storage.local.get(request.data.word).then(result => {
             let wordData = result[request.data.word];
             if (wordData) {
-                // Filter out the exact sentence they want to delete
+                //find the the exact sentence they want to delete and filter it out
                 wordData.examples = wordData.examples.filter(ex => ex.sentence !== request.data.sentence);
                 chrome.storage.local.set({ [request.data.word]: wordData }).then(() => sendResponse({ status: "success" }));
             }
@@ -31,10 +29,10 @@ async function saveWordToDatabase(data) {
         let result = await chrome.storage.local.get(word);
         let wordData = result[word] || { 
             examples: [], 
-            timestamp: Date.now() // <-- Added timestamp
+            timestamp: Date.now() //timestamp to be able to sort by recently added
         };
 
-        // Force update the definition and language to whatever the edit panel sends
+        //update the definition and language
         wordData.definition = definition;
         wordData.language = language; 
         

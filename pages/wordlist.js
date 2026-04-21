@@ -1,9 +1,9 @@
-// --- STATE MANAGEMENT ---
+//STATE MANAGEMENT
 let allWords = []; 
 let currentPage = 1;
 const itemsPerPage = 10; 
 
-// --- DOM ELEMENTS ---
+//DOM ELEMENTS
 const container = document.getElementById('word-list-container');
 const filterLang = document.getElementById('filter-lang');
 const sortOrder = document.getElementById('sort-order');
@@ -11,31 +11,30 @@ const btnPrev = document.getElementById('btn-prev');
 const btnNext = document.getElementById('btn-next');
 const pageInfo = document.getElementById('page-info');
 
-// --- INITIALIZATION ---
-// --- INITIALIZATION ---
+//initialization
 async function loadData() {
     let data = await chrome.storage.local.get(null);
     
-    // 1. BUILD THE DYNAMIC LANGUAGE DROPDOWN
+    //dynamic language dropdown
     let langs = data.settings?.languages || [
         { code: "en", name: "English" }, { code: "es", name: "Spanish" }, { code: "fr", name: "French" }, { code: "pl", name: "Polish" }
     ];
     
     let filterLangDropdown = document.getElementById('filter-lang');
-    // Keep the default "All", add the custom languages, and cap it off with "Unassigned"
+    //default "All", add the custom languages, and cap it off with "Unassigned"
     let optionsHtml = `<option value="all">All Languages</option>`;
     optionsHtml += langs.map(l => `<option value="${l.code}">${l.name}</option>`).join('');
     optionsHtml += `<option value="unassigned">Unassigned</option>`;
     
-    // Only update the innerHTML if we haven't selected a specific filter yet 
-    // (prevents the dropdown from resetting to "All" when you delete a word)
+    //only update the innerHTML if we haven't selected a specific filter yet 
+    //(prevents the dropdown from resetting to "all" when deleting a word)
     let currentSelection = filterLangDropdown.value;
     filterLangDropdown.innerHTML = optionsHtml;
     filterLangDropdown.value = currentSelection || "all";
 
-    // 2. LOAD THE WORDS (And ignore the 'settings' object!)
+    //load the words (ignore the 'settings' object)
     allWords = Object.keys(data)
-        .filter(key => key !== "settings") // CRITICAL: Don't load settings as a word
+        .filter(key => key !== "settings")
         .map(key => {
             return {
                 word: key,
@@ -49,7 +48,7 @@ async function loadData() {
     renderList();
 }
 
-// --- CORE RENDER FUNCTION ---
+//render function with sorting, filtering, and pagination
 function renderList() {
     let filteredWords = allWords;
     if (filterLang.value !== 'all') {
@@ -58,7 +57,7 @@ function renderList() {
 
     filteredWords.sort((a, b) => {
         if (sortOrder.value === 'newest') {
-            return b.timestamp - a.timestamp; // Highest number (newest) first
+            return b.timestamp - a.timestamp; //highest number (newest) first
         } else if (sortOrder.value === 'a-z') {
             return a.word.localeCompare(b.word);
         } else {
@@ -93,7 +92,7 @@ function renderList() {
 
             let details = document.createElement('details');
             details.className = 'word-card';
-            // Notice we create a "View Mode" and an invisible "Edit Mode"
+            //create a "view Mode" and an invisible "edit Mode"
             details.innerHTML = `
                 <summary>
                     <span>${wordObj.word} <span class="lang-badge">${wordObj.language}</span></span>
@@ -127,7 +126,7 @@ function renderList() {
     btnNext.disabled = currentPage === totalPages;
 }
 
-// --- EVENT LISTENERS ---
+//event listeners
 
 filterLang.addEventListener('change', () => { currentPage = 1; renderList(); });
 sortOrder.addEventListener('change', () => { currentPage = 1; renderList(); });
@@ -139,15 +138,15 @@ btnNext.addEventListener('click', () => {
     currentPage++; renderList(); window.scrollTo(0, 0);
 });
 
-// --- INTERACTIVE BUTTONS (Event Delegation) ---
-// We listen to the whole container so we don't have to attach 100 separate event listeners
+//buttons
+//listen to the whole container to avoid ton of individual listeners
 container.addEventListener('click', async (e) => {
     let btn = e.target.closest('button');
     if (!btn) return;
 
     let word = btn.getAttribute('data-word');
 
-    // 1. Delete Entire Word
+    //delete entire word
     if (btn.classList.contains('delete-word-btn')) {
         if (confirm(`Are you sure you want to completely delete "${word}"?`)) {
             await chrome.runtime.sendMessage({ action: "deleteWord", data: { word } });
@@ -155,7 +154,7 @@ container.addEventListener('click', async (e) => {
         }
     }
     
-    // 2. Delete Single Sentence
+    //delete only a specific context sentence
     if (btn.classList.contains('delete-sentence-btn')) {
         let sentence = btn.getAttribute('data-sentence');
         if (confirm(`Delete this context sentence?`)) {
@@ -164,19 +163,19 @@ container.addEventListener('click', async (e) => {
         }
     }
 
-    // 3. Enter Edit Mode
+    //enter edit mode
     if (btn.classList.contains('edit-word-btn')) {
         document.getElementById(`view-${word}`).style.display = 'none';
         document.getElementById(`edit-${word}`).style.display = 'block';
     }
 
-    // 4. Cancel Edit Mode
+    //cancel edit mode
     if (btn.classList.contains('cancel-edit-btn')) {
         document.getElementById(`view-${word}`).style.display = 'block';
         document.getElementById(`edit-${word}`).style.display = 'none';
     }
 
-    // 5. Save Edited Definition
+    //save word definition
     if (btn.classList.contains('save-word-btn')) {
         let newDef = document.getElementById(`edit-def-${word}`).value.trim();
         let wordObj = allWords.find(w => w.word === word);
@@ -190,5 +189,5 @@ container.addEventListener('click', async (e) => {
     }
 });
 
-// Start the engine
+
 loadData();

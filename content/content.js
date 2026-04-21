@@ -1,19 +1,18 @@
-// A variable to keep track of our floating icon so we can easily remove it
+//variables to keep track of floating elements for easier removal later
 let floatingIcon = null;
-
+let floatingPanel = null;
 let readOnlyPanel = null;
 
-// 1. Listen for the user to finish dragging/highlighting
+//listener for draging/highlighting text on the page
 document.addEventListener('mouseup', function(event) {
     if (event.target.id === 'my-dictionary-floating-icon' || event.target.closest('#my-dictionary-panel')) {
         return; 
     }
 
-    // Get the text they highlighted and remove extra spaces
+    //getting the hightlighted text and the context sentence around it
     let selectedTextJson = getSelectionDetails();
     
-
-    // If they actually selected a word (not just clicked randomly)
+    //if the text is valid show the icon
     if (selectedTextJson && selectedTextJson.isValid) {
         let selectedText = selectedTextJson.word;
         let contextSentence = selectedTextJson.sentence;
@@ -21,7 +20,7 @@ document.addEventListener('mouseup', function(event) {
     }
 });
 
-// 2. Hide the icon/panels if they click anywhere else on the page
+//hide the icon/panel if click anywhere else on the page
 document.addEventListener('mousedown', function(event) {
     // Ignore clicks on the icon OR inside either panel
     if (event.target.id === 'my-dictionary-floating-icon' || 
@@ -36,7 +35,7 @@ document.addEventListener('mousedown', function(event) {
 });
 
 
-// 3. Listen for clicks on our highlighted words
+//listener for clicks on the highlighted text
 document.addEventListener('click', async function(event) {
     if (event.target.classList.contains('my-dictionary-highlight')) {
         event.preventDefault(); 
@@ -66,30 +65,26 @@ document.addEventListener('click', async function(event) {
 // --- Helper Functions ---
 
 function showIcon(x, y, text, contextSentence) {
-    // Remove any existing icon first just in case
+    //remove any existing icon to avoid duplicates
     removeIcon();
 
-    // Create a new image element
     floatingIcon = document.createElement('img');
     floatingIcon.id = 'my-dictionary-floating-icon';
     
-    // NOTE: You must use chrome.runtime.getURL to get the correct path 
-    // for an image stored inside your extension folder!
+    //using chrome.* instead of browser.* for better compatibility across browsers
     floatingIcon.src = chrome.runtime.getURL('/icons/save.png'); 
 
-    // Position it slightly below and to the right of the cursor
+    //position the icon near the cursor
     floatingIcon.style.left = (x + 5) + 'px';
     floatingIcon.style.top = (y + 10) + 'px';
 
-    // Add it to the webpage
     document.body.appendChild(floatingIcon);
 
-    // Make the icon clickable!
     floatingIcon.addEventListener('click', function() {
         console.log("You clicked the icon! The word is:", text);
-        showPanel(x + 5, y + 10, text, contextSentence); // Pass the selected text and context sentence to the panel
+        showPanel(x + 5, y + 10, text, contextSentence); //pass the selected text + sentence to the panel
         
-        // Remove the icon after clicking
+        //remove icon after opening the panel
         removeIcon(); 
     });
 }
@@ -101,14 +96,12 @@ function removeIcon() {
     }
 }
 
-// Add a variable to track the panel just like we did with the icon
-let floatingPanel = null;
 
-// Notice the new 'existingData' parameter
 async function showPanel(x, y, selectedText, contextSentence, existingData = null) {
+    //remove any other floating elements
     removeIcon(); 
     removePanel();
-    removeReadOnlyPanel(); // Ensure the read-only one closes!
+    removeReadOnlyPanel();
 
     let boldedSentence = "";
     if (contextSentence) {
@@ -120,17 +113,16 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
     floatingPanel = document.createElement('div');
     floatingPanel.id = 'my-dictionary-panel';
     
-    // NEW: Fetch all settings from the database
     let storageData = await chrome.storage.local.get("settings");
     let settings = storageData.settings || {};
     let langs = settings.languages || [
         { code: "en", name: "English" }, { code: "es", name: "Spanish" }, { code: "fr", name: "French" }, { code: "pl", name: "Polish" }
     ];
     
-    // Grab the user's chosen default (falling back to French if nothing is set yet)
+    //Set users default language or fallback to french
     let defaultLangCode = settings.defaultLanguage || "fr";
 
-    // NEW: Fetch search providers and the chosen default
+    //Set users default search provider or fallback to wiktionary
     let searchProviders = settings.searchProviders && settings.searchProviders.length > 0 
         ? settings.searchProviders 
         : [{ name: "Wiktionary", url: "https://en.wiktionary.org/wiki/{word}" }];
@@ -138,20 +130,20 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
     let defaultSearchName = settings.defaultSearch || "Wiktionary";
     let chosenProvider = searchProviders.find(p => p.name === defaultSearchName) || searchProviders[0];
     
-    // Encode the word into the final URL
+    //build the search url by replacing thr {word} placeholder
     let defaultSearchUrl = chosenProvider.url.replace('{word}', encodeURIComponent(selectedText));
 
-    // Set up existing values if we are in Edit Mode, otherwise use the dynamic default!
+    //set up existing values if we're editing an existing word, otherwise use defaults
     let currentDef = existingData ? existingData.definition : "";
     let currentLang = existingData ? existingData.language : defaultLangCode;
     
-    // Build the dynamic <option> tags
+    //build the dynamic language dropdown options
     let langOptionsHtml = langs.map(l => 
         `<option value="${l.code}" ${currentLang === l.code ? 'selected' : ''}>${l.name}</option>`
     ).join('');
     langOptionsHtml += `<option value="unassigned" ${currentLang === 'unassigned' ? 'selected' : ''}>Unassigned</option>`;
 
-    // Build the editable sentences list with trash cans
+    //build the existing sentences sections if there are any
     let existingSentencesHtml = "";
     if (existingData && existingData.examples && existingData.examples.length > 0) {
         let sentences = existingData.examples.map((ex, index) => `
@@ -197,7 +189,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
 
     document.body.appendChild(floatingPanel);
 
-    // Position math
+    //position math
     let panelRect = floatingPanel.getBoundingClientRect();
     let scrollX = window.scrollX;
     let scrollY = window.scrollY;
@@ -206,7 +198,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
     floatingPanel.style.left = Math.max(Math.min(x, maxX), scrollX + 15) + 'px';
     floatingPanel.style.top = Math.max(Math.min(y, maxY), scrollY + 15) + 'px';
 
-    // Dragging Logic
+    //dragging Logic
     let header = floatingPanel.querySelector('.dict-header');
     header.addEventListener('mousedown', function(e) {
         if (e.target.id === 'dict-close-btn') return;
@@ -229,15 +221,15 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
         document.addEventListener('mouseup', dragEnd);
     });
 
-    // Checkbox toggle
+    // checkbox to add new context sentence
     document.getElementById('context-sentence-checkbox').addEventListener('change', function() {
         document.getElementById('context-sentence').style.display = this.checked ? 'block' : 'none';
     });
 
-    // Close button
+    //close button
     document.getElementById('dict-close-btn').addEventListener('click', removePanel);
     
-    // DELETE SENTENCE listeners
+    //DELETE SENTENCE listeners
     document.querySelectorAll('.dict-delete-sentence-btn').forEach(btn => {
         btn.addEventListener('click', async function() {
             let sentenceToDelete = this.getAttribute('data-sentence');
@@ -251,7 +243,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
         });
     });
 
-    // DELETE ENTIRE WORD listener
+    //DELETE ENTIRE WORD listener
     let deleteWordBtn = document.getElementById('dict-delete-word-btn');
     if (deleteWordBtn) {
         deleteWordBtn.addEventListener('click', async function() {
@@ -261,10 +253,10 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
             this.textContent = "Deleting...";
             await chrome.runtime.sendMessage({ action: "deleteWord", data: { word: selectedText } });
             
-            // THE FIX: Update memory before changing the page
+            //update the highlighter regex in memory to imidietely remove highlights of the deleted word
             await refreshHighlighter();
             
-            // Now safely remove the highlights
+            //safely remove the highlights of the deleted word
             document.querySelectorAll('.my-dictionary-highlight').forEach(span => {
                 if (span.textContent.toLowerCase() === selectedText.toLowerCase()) {
                     span.outerHTML = span.innerHTML; 
@@ -275,7 +267,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
         });
     }
 
-    // SAVE listener
+    //SAVE listener
     document.getElementById('dict-save-btn').addEventListener('click', async function() {
         let finalDef = document.getElementById('dict-def').value.trim();
         let finalLang = document.getElementById('dict-lang').value;
@@ -291,7 +283,7 @@ async function showPanel(x, y, selectedText, contextSentence, existingData = nul
                 data: { word: selectedText, definition: finalDef, language: finalLang, sentence: finalSentence, weblink: currentUrl }
             });
             
-            // UX BONUS: Update memory and immediately highlight the new word on the current page!
+            //imidietely update the highlighter regex in memory and highlight the word without refreshing the page
             await refreshHighlighter();
             highlightNode(document.body);
             
@@ -320,7 +312,7 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
         let wordData = result[wordToLookup];
         if (!wordData) return;
 
-        // NEW: Fetch settings for the search link
+        //like in the edit/save panel
         let settingsData = await chrome.storage.local.get("settings");
         let searchProviders = settingsData.settings?.searchProviders && settingsData.settings.searchProviders.length > 0 
             ? settingsData.settings.searchProviders 
@@ -373,7 +365,7 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
 
         document.body.appendChild(readOnlyPanel);
 
-        // Position math (same as before)
+        //position math (same as before)
         let panelRect = readOnlyPanel.getBoundingClientRect();
         let scrollX = window.scrollX;
         let scrollY = window.scrollY;
@@ -382,15 +374,15 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
         readOnlyPanel.style.left = Math.max(Math.min(x, maxX), scrollX + 15) + 'px';
         readOnlyPanel.style.top = Math.max(Math.min(y, maxY), scrollY + 15) + 'px';
 
-        // Listeners
+        //close button
         document.getElementById('dict-readonly-close-btn').addEventListener('click', removeReadOnlyPanel);
         
-        // OPEN EDIT PANEL
+        //edit button (open edit panel)
         document.getElementById('dict-readonly-edit-btn').addEventListener('click', () => {
             showPanel(x, y, wordToLookup, currentSentence, wordData);
         });
 
-        // ADD CURRENT SENTENCE
+        //add current sentence
         let addContextBtn = document.getElementById('dict-add-context-btn');
         if (addContextBtn) {
             addContextBtn.addEventListener('click', async function() {
@@ -399,7 +391,7 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
                     action: "saveWord",
                     data: { word: wordToLookup, definition: wordData.definition, language: wordData.language, sentence: currentSentence, weblink: currentUrl }
                 });
-                // Reload the read-only panel to show the new sentence
+                //reload with new sentence added
                 showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl);
             });
         }
@@ -423,29 +415,29 @@ function getSelectionDetails() {
 
     if (!selectedText) return null;
 
-    // 1. Get the container holding our text (safest to grab a block element like a paragraph)
+    //grab the conteiner of the selected text
     let container = selection.anchorNode.parentElement;
     let closestBlock = container.closest('p, div, article, section, li, td') || container;
 
-    // 2. Figure out the EXACT character position of the highlight using the Range API
+    //using Range API to get the exact position of selection in order to grab the correct sentence
     let range = selection.getRangeAt(0);
     let preCaretRange = range.cloneRange();
     preCaretRange.selectNodeContents(closestBlock);
     preCaretRange.setEnd(range.startContainer, range.startOffset);
     
-    // This tells us exactly how many characters are before the highlight
+    //pinpoint the exact start of selected text (by getting the lenght of the text before it)
     let startOffset = preCaretRange.toString().length; 
     
-    // Account for any spaces the user accidentally highlighted before the word
+    //trim any extra spaces around the selected text
     let trimStart = rawSelection.indexOf(selectedText); 
     
     let exactStart = startOffset + trimStart;
     let exactEnd = exactStart + selectedText.length;
 
-    // We use textContent because it perfectly matches the Range string length
+    //we use textContent because it perfectly matches the Range string length
     let fullText = closestBlock.textContent; 
 
-    // 3. Validate word boundaries (make sure they didn't highlight half a word)
+    //validate that the selection is only full words
     let isLetter = /[\p{L}]/u;
     let charBefore = fullText.charAt(exactStart - 1);
     let charAfter = fullText.charAt(exactEnd);
@@ -453,7 +445,7 @@ function getSelectionDetails() {
     if (charBefore && isLetter.test(charBefore)) return { isValid: false };
     if (charAfter && isLetter.test(charAfter)) return { isValid: false };
 
-    // 4. Look backwards from our exact word to find the start of the sentence
+    //look backwards to find the start of the sentence
     let leftPart = fullText.substring(0, exactStart);
     let sentenceStart = Math.max(
         leftPart.lastIndexOf('.'),
@@ -461,10 +453,9 @@ function getSelectionDetails() {
         leftPart.lastIndexOf('?'),
         leftPart.lastIndexOf('\n')
     );
-    // Move one character past the punctuation mark (or stay at 0 if no punctuation)
     sentenceStart = sentenceStart === -1 ? 0 : sentenceStart + 1;
 
-    // 5. Look forwards from our exact word to find the end of the sentence
+    //look forwards to find the end of the sentence
     let rightPart = fullText.substring(exactEnd);
     let boundaries = [
         rightPart.indexOf('.'),
@@ -473,14 +464,13 @@ function getSelectionDetails() {
         rightPart.indexOf('\n')
     ].filter(i => i !== -1);
     
-    // Find the closest punctuation mark, +1 to include the punctuation in the sentence
     let rightOffset = boundaries.length > 0 ? Math.min(...boundaries) + 1 : rightPart.length;
     let sentenceEnd = exactEnd + rightOffset;
 
-    // 6. Slice out the perfect sentence based on those coordinates!
+    //slice the full sentence out of the text
     let sentence = fullText.substring(sentenceStart, sentenceEnd).trim();
 
-    // Clean up weird invisible formatting (like multiple spaces/newlines inside the HTML)
+    //clean up any extra whitespace in the sentence to avoid saving weird formatting
     sentence = sentence.replace(/\s+/g, ' ');
 
     return {
@@ -492,19 +482,19 @@ function getSelectionDetails() {
 
 // --- DYNAMIC HIGHLIGHTER (MutationObserver) ---
 
-// 1. A global variable to store our regex in memory
+//variable to store the highlight regex to avoid rebuilding it on every single text node
 let cachedHighlightRegex = null;
 
-// 2. The initialization function that runs ONCE when the page loads
+//initialization function to build the regex dictionary in memory and start the observer once at page load
 async function initializeHighlighter() {
     try {
         let data = await chrome.storage.local.get(null);
         let settings = data.settings || { languages: [] };
         
-        // Find languages that have highlighting turned OFF
+        //filter out languages with highlighting turned OFF in settings
         let disabledLangs = settings.languages.filter(l => !l.highlight).map(l => l.code);
         
-        // Filter the dictionary: Ignore the settings object, and ignore disabled languages
+        //get all saved words ignoring the "settings" key and any words in disabled languages
         let savedWords = Object.keys(data).filter(key => {
             if (key === "settings") return false; // THE FIX: Ignore the word 'settings'
             if (disabledLangs.includes(data[key].language)) return false; 
@@ -516,25 +506,25 @@ async function initializeHighlighter() {
         let escapedWords = savedWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
         cachedHighlightRegex = new RegExp(`(?<!\\p{L})(${escapedWords.join('|')})(?!\\p{L})`, 'gui');
 
-        // Highlight the initial page content
+        //highlight all existing words on the page immediately
         highlightNode(document.body);
 
-        // Start watching for new content
+        //start watching for any new nodes being added to the page (infinite scroll, dynamic content, etc)
         startMutationObserver();
     } catch (error) {
         console.error("Dictionary Init Error:", error);
     }
 }
 
-// --- NEW: Refreshes the regex dictionary in memory ---
+//refresh the highlighter regex after any changes in the dictionary
 async function refreshHighlighter() {
     let data = await chrome.storage.local.get(null);
     let settings = data.settings || { languages: [] };
     
-    // Find languages that have highlighting turned OFF
+    //skip disabled languages
     let disabledLangs = settings.languages.filter(l => !l.highlight).map(l => l.code);
     
-    // Filter the dictionary: Ignore the settings object, and ignore disabled languages
+    //fetch all enabled saved words (ignoring settings key)
     let savedWords = Object.keys(data).filter(key => {
         if (key === "settings") return false; // Don't try to highlight the word "settings"
         if (disabledLangs.includes(data[key].language)) return false; 
@@ -550,9 +540,9 @@ async function refreshHighlighter() {
     cachedHighlightRegex = new RegExp(`(?<!\\p{L})(${escapedWords.join('|')})(?!\\p{L})`, 'gui');
 }
 
-// 3. The reusable TreeWalker function (now accepts a specific root node)
+//highlight function to highlight all occurrences of saved words in a given DOM node
 function highlightNode(targetNode) {
-    if (!cachedHighlightRegex) return; // Bail if we have no words to find
+    if (!cachedHighlightRegex) return; //return if no words to highlight
 
     let walker = document.createTreeWalker(
         targetNode,
@@ -563,12 +553,12 @@ function highlightNode(targetNode) {
             if (!parent) return NodeFilter.FILTER_REJECT;
             
             let tag = parent.tagName;
-            // Ignore scripts, inputs, and ALL of our injected UI panels
+            //ignore scripts, inputs, and ALL of our injected UI panels
             if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || 
                 tag === 'TEXTAREA' || tag === 'INPUT' || 
                 parent.classList.contains('my-dictionary-highlight') ||
                 parent.closest('#my-dictionary-panel') ||
-                parent.closest('#my-dictionary-readonly-panel')) { // <-- ADDED THIS LINE
+                parent.closest('#my-dictionary-readonly-panel')) {
                 return NodeFilter.FILTER_REJECT;
             }
             return NodeFilter.FILTER_ACCEPT;
@@ -605,7 +595,7 @@ function highlightNode(targetNode) {
             highlightSpan.className = 'my-dictionary-highlight';
             highlightSpan.textContent = match[0];
             
-            // Optional UX Touch: Show the word in a tooltip when they hover over it
+            //show a tooltip on hover to indicate that this word is saved in the dictionary
             highlightSpan.title = "Saved in your dictionary!"; 
             
             fragment.appendChild(highlightSpan);
@@ -622,25 +612,25 @@ function highlightNode(targetNode) {
     });
 }
 
-// 4. The Observer that watches for infinite scrolling
+//observer that watches for any new nodes being added to the page and highlights them if they contain saved words
 function startMutationObserver() {
     let observer = new MutationObserver((mutations) => {
         for (let mutation of mutations) {
-            // We only care about new nodes being added to the screen
+            //only look at added nodes
             if (mutation.addedNodes.length > 0) {
                 mutation.addedNodes.forEach(node => {
-                    // Only process actual HTML elements
+                    //only process actual HTML elements
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        // Prevent an infinite loop by ignoring all our own injected UI
+                        //prevent an infinite loop by ignoring all our own injected UI
                         if (node.id === 'my-dictionary-panel' || 
                             node.id === 'my-dictionary-floating-icon' ||
-                            node.id === 'my-dictionary-readonly-panel') { // <-- ADDED THIS LINE
+                            node.id === 'my-dictionary-readonly-panel') {
                             return; 
                         }
                         
                         highlightNode(node);
                     }
-                    // Sometimes websites inject raw text nodes
+                    //sometimes websites inject raw text nodes
                     else if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
                         highlightNode(node.parentNode);
                     }
@@ -649,12 +639,11 @@ function startMutationObserver() {
         }
     });
 
-    // Tell the observer to watch the whole body and all its children
+    //tell the observer to watch the whole body and all its children
     observer.observe(document.body, {
         childList: true,
         subtree: true
     });
 }
 
-// Kick off the whole process!
 initializeHighlighter();

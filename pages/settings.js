@@ -29,17 +29,17 @@ async function loadSettings() {
     if (!settings.defaultSearch) settings.defaultSearch = "Wiktionary";
 
     renderDefaultSelect(settings.languages, settings.defaultLanguage);
-    renderDefaultSearchSelect(settings.searchProviders, settings.defaultSearch); // <-- New function
+    renderDefaultSearchSelect(settings.searchProviders, settings.defaultSearch);
     renderLangs(settings.languages);
     renderSearchProviders(settings.searchProviders);
 
     renderExportSelect(settings.languages);
 }
 
-// Master save function
+//saves settings and reloads the UI to reflect the changes
 async function saveSettings(newSettings) {
     await chrome.storage.local.set({ settings: newSettings });
-    loadSettings(); // Reload the UI to reflect exact saved state
+    loadSettings(); //reload the UI to reflect exact saved state
 }
 
 function renderDefaultSelect(langs, currentDefault) {
@@ -100,7 +100,7 @@ function renderSearchProviders(providers) {
     });
 }
 
-// --- EVENT LISTENERS ---
+//EVENT LISTENERS
 
 defaultLangSelect.addEventListener('change', async (e) => {
     let data = await chrome.storage.local.get("settings");
@@ -109,7 +109,7 @@ defaultLangSelect.addEventListener('change', async (e) => {
     saveSettings(settings);
 });
 
-// ADD Language
+//add new language
 document.getElementById('btn-add-lang').addEventListener('click', async () => {
     let code = document.getElementById('new-lang-code').value.trim().toLowerCase();
     let name = document.getElementById('new-lang-name').value.trim();
@@ -125,7 +125,7 @@ document.getElementById('btn-add-lang').addEventListener('click', async () => {
     saveSettings(settings);
 });
 
-// CHANGE Default Search Provider
+//change default search provider
 defaultSearchSelect.addEventListener('change', async (e) => {
     let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
@@ -133,7 +133,7 @@ defaultSearchSelect.addEventListener('change', async (e) => {
     saveSettings(settings);
 });
 
-// ADD Search Provider
+//add new search provider
 document.getElementById('btn-add-search').addEventListener('click', async () => {
     let name = document.getElementById('new-search-name').value.trim();
     let url = document.getElementById('new-search-url').value.trim();
@@ -149,7 +149,7 @@ document.getElementById('btn-add-search').addEventListener('click', async () => 
     saveSettings(settings);
 });
 
-// DELETES and TOGGLES via Event Delegation
+//deletes and toggeles
 document.body.addEventListener('click', async (e) => {
     let data = await chrome.storage.local.get("settings");
     let settings = data.settings || defaultSettings;
@@ -166,7 +166,7 @@ document.body.addEventListener('click', async (e) => {
         if (confirm(`Remove this language? Any saved words will be moved to "Unassigned".`)) {
             settings.languages.splice(index, 1);
             
-            // Re-assign fallback if they deleted the default
+            //fallback to unassigned if default was deleted
             if (!settings.languages.some(l => l.code === settings.defaultLanguage)) {
                 settings.defaultLanguage = settings.languages.length > 0 ? settings.languages[0].code : "unassigned";
             }
@@ -186,7 +186,7 @@ document.body.addEventListener('click', async (e) => {
     if (deleteSearchBtn) {
         if (confirm("Remove this search provider?")) {
             settings.searchProviders.splice(deleteSearchBtn.getAttribute('data-index'), 1);
-            // Re-assign fallback if they deleted the default
+            //re-assign fallback if they deleted the default
             if (!settings.searchProviders.some(p => p.name === settings.defaultSearch)) {
                 settings.defaultSearch = settings.searchProviders.length > 0 ? settings.searchProviders[0].name : "";
             }
@@ -195,7 +195,7 @@ document.body.addEventListener('click', async (e) => {
     }
 });
 
-// --- EXPORT LOGIC ---
+//export logic
 document.getElementById('btn-export').addEventListener('click', async () => {
     let lang = exportLangSelect.value;
     let data = await chrome.storage.local.get(null);
@@ -211,7 +211,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
     
     if (Object.keys(exportObj).length === 0) return alert("No words found to export for this language.");
 
-    // Create and download the JSON file
+    //create a downloadable JSON file from the exportObj
     let blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: "application/json"});
     let url = URL.createObjectURL(blob);
     let a = document.createElement('a');
@@ -221,7 +221,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
     URL.revokeObjectURL(url);
 });
 
-// --- IMPORT LOGIC ---
+//import logic
 document.getElementById('btn-import').addEventListener('click', () => {
     let fileInput = document.getElementById('import-file');
     if (!fileInput.files.length) return alert("Please select a JSON file to import.");
@@ -238,12 +238,12 @@ document.getElementById('btn-import').addEventListener('click', () => {
             let updatedCount = 0;
 
             for (let word in importedData) {
-                if (word === "settings") continue; // Never overwrite settings via word import
+                if (word === "settings") continue; //ignore any settings object if present
 
                 let incomingWord = importedData[word];
                 
                 if (currentData[word]) {
-                    // Word exists: Keep local definition & language, merge context sentences
+                    //word exists: keep local definition & language, merge context sentences
                     let existingExamples = currentData[word].examples || [];
                     let incomingExamples = incomingWord.examples || [];
                     let addedNewSentence = false;
@@ -260,7 +260,7 @@ document.getElementById('btn-import').addEventListener('click', () => {
                         updatedCount++;
                     }
                 } else {
-                    // Brand new word: import it completely
+                    //brand new word: import it completely
                     currentData[word] = incomingWord;
                     addedCount++;
                 }

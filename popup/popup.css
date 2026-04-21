@@ -1,5 +1,5 @@
 body {
-    width: 200px; /* This sets the exact width of the popup box */
+    width: 200px; /* sets the exact width of the popup box */
     margin: 0;
     padding: 15px;
     background-color: #1e1e1e;
@@ -21,7 +21,7 @@ button {
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    text-align: left; /* Aligns the text and emoji to the left */
+    text-align: left; /* aligns the text and emoji to the left */
     transition: background-color 0.2s;
 }
 

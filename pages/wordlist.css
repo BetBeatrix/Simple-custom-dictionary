@@ -8,7 +8,7 @@ body {
 
 .container {
     max-width: 800px;
-    margin: 0 auto; /* Centers the app on the screen */
+    margin: 0 auto; /* centers the app on the screen */
 }
 
 header {
@@ -63,7 +63,7 @@ select:focus {
     border-color: #0d6efd;
 }
 
-/* --- Word Cards (The Expandable Details) --- */
+/* word cards (expandable details) */
 .word-card {
     background-color: #1e1e1e;
     border: 1px solid #333;
@@ -80,11 +80,11 @@ select:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    list-style: none; /* Hides the default browser arrow */
+    list-style: none; /* hides the default browser arrow */
     background-color: #252525;
 }
 
-/* Add our own custom arrow that rotates */
+/* add custom arrow that rotates */
 .word-card summary::after {
     content: "▼";
     font-size: 12px;
@@ -132,7 +132,7 @@ select:focus {
     margin-right: 8px;
 }
 
-/* --- Pagination --- */
+/* pagination */
 .pagination {
     display: flex;
     justify-content: space-between;
