@@ -308,9 +308,20 @@ async function showReadOnlyPanel(x, y, wordToLookup, currentSentence, currentUrl
     removeReadOnlyPanel();
 
     try {
-        let result = await chrome.storage.local.get(wordToLookup);
-        let wordData = result[wordToLookup];
+        let result = await chrome.storage.local.get(null);
+
+        //ignore upper/lowercase and apostrophe types
+        let actualSavedKey = Object.keys(result).find(key => {
+            if (key === "settings") return false;
+            let normalizedKey = key.toLowerCase().replace(/’/g, "'");
+            let normalizedLookup = wordToLookup.toLowerCase().replace(/’/g, "'");
+            return normalizedKey === normalizedLookup;
+        });
+
+        let wordData = result[actualSavedKey];
         if (!wordData) return;
+
+        wordToLookup = actualSavedKey;
 
         //like in the edit/save panel
         let settingsData = await chrome.storage.local.get("settings");
@@ -496,14 +507,17 @@ async function initializeHighlighter() {
         
         //get all saved words ignoring the "settings" key and any words in disabled languages
         let savedWords = Object.keys(data).filter(key => {
-            if (key === "settings") return false; // THE FIX: Ignore the word 'settings'
+            if (key === "settings") return false; //Ignore the word 'settings'
             if (disabledLangs.includes(data[key].language)) return false; 
             return true;
         });
         
         if (savedWords.length === 0) return;
 
-        let escapedWords = savedWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        let escapedWords = savedWords.map(w => {
+            let escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return escaped.replace(/['’]/g, "['’]"); //treat straight and curly apostrophes as identical
+        });
         cachedHighlightRegex = new RegExp(`(?<!\\p{L})(${escapedWords.join('|')})(?!\\p{L})`, 'gui');
 
         //highlight all existing words on the page immediately
